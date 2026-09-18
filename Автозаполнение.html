@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Автозаполнение документов Word из Excel</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+
+        .file-input {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 20px 0;
+        }
+
+            button:hover {
+                background: #0056b3;
+            }
+
+            button:disabled {
+                background: #ccc;
+                cursor: not-allowed;
+            }
+
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .info {
+            background: #e7f3ff;
+            color: #004085;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .template-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+
+        .add-template {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+
+        .debug-panel {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow: auto;
+            white-space: pre-wrap;
+            display: none;
+        }
+
+        .debug-btn {
+            background: #6c757d;
+            margin-right: 10px;
+        }
+
+            .debug-btn:hover {
+                background: #5a6268;
+            }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 Автозаполнение документов Word</h1>
+        <p>Папки называются по фамилии (столбец "Фамилия")</p>
+
+        <div class="file-input">
+            <label>📊 Файл Excel с данными:</label>
+            <input type="file" id="excelFile" accept=".xlsx, .xls, .csv">
+        </div>
+
+        <div id="templatesSection">
+            <h3>📑 Шаблоны документов:</h3>
+            <div id="templateList"></div>
+            <button class="add-template" onclick="addTemplateField()">+ Добавить шаблон</button>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button id="generateBtn" disabled>Создать документы</button>
+            <button class="debug-btn" onclick="toggleDebug()">📋 Показать отладку</button>
+        </div>
+
+        <div id="status" class="status"></div>
+        <div id="debugPanel" class="debug-panel"></div>
+    </div>
+
+    <!-- Библиотеки -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.37.0/build/docxtemplater.js"></script>
+
+    <script>
+        // ========== НАСТРОЙКА СТОЛБЦОВ ==========
+        const RAW_COLUMNS = [
+            'Фамилия',
+            'Имя',
+            'Отчество',
+            'Дата рождения',
+            'Место учебы (пишется официально ФГБОУ ВО "Иркутский государственный университет")',
+            'Место регистрации по паспорту',
+            'Контактный телефон',
+            'Вк',
+            'Электронная почта',
+            'Серия паспорта',
+            'Номер паспорта',
+            'Код подразделения, выдавшего Паспорт',  // Проблемное поле
+            'Кем выдан паспорт',
+            'Дата выдачи Паспорта',
+            'Фактический адрес',
+            'Город рождения'
+        ];
+
+        // Нормализованные версии ТОЛЬКО ДЛЯ СРАВНЕНИЯ
+        const NORMALIZED_COLUMNS = RAW_COLUMNS.map(col => col.toLowerCase().trim());
+
+        const COLUMN_MAPPING = {
+            FOLDER_NAME: 'Фамилия',
+            RAW_COLUMNS: RAW_COLUMNS,
+            NORMALIZED: NORMALIZED_COLUMNS
+        };
+
+        let excelRows = [];
+        let templates = [];
+        let debugLogs = [];
+
+        // ========== ОТЛАДКА ==========
+        function debug(message, data = null) {
+            const timestamp = new Date().toLocaleTimeString();
+            let logMessage = `[${timestamp}] ${message}`;
+            if (data) {
+                if (typeof data === 'object') {
+                    logMessage += `\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    logMessage += ` ${data}`;
+                }
+            }
+            debugLogs.push(logMessage);
+            document.getElementById('debugPanel').innerHTML = debugLogs.join('\n\n');
+            console.log(`🔍 ${message}`, data || '');
+        }
+
+        window.toggleDebug = function () {
+            const panel = document.getElementById('debugPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        };
+
+        // ========== НОРМАЛИЗАЦИЯ СТРОК ТОЛЬКО ДЛЯ КЛЮЧЕЙ ==========
+        function normalizeKey(str) {
+            if (!str) return '';
+            return String(str).toLowerCase().trim();
+        }
+
+        // ========== ПРЕОБРАЗОВАНИЕ ДАТЫ ==========
+        function formatExcelDate(excelDate) {
+            if (!excelDate && excelDate !== 0) return '';
+            try {
+                const date = new Date((excelDate - 25569) * 86400 * 1000);
+                if (!isNaN(date)) {
+                    const day = date.getDate().toString().padStart(2, '0');
+                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                    const year = date.getFullYear();
+                    return `${day}.${month}.${year}`;
+                }
+            } catch (e) { }
+            return String(excelDate);
+        }
+
+        // ========== ПОИСК ЗНАЧЕНИЯ ПО КЛЮЧУ (БЕЗ УЧЕТА РЕГИСТРА) ==========
+        function findValueByKey(data, targetKey) {
+            const normalizedTarget = normalizeKey(targetKey);
+
+            // Специальная обработка для "Код подразделения"
+            if (targetKey.includes('Код подразделения')) {
+                debug(`  🔍 Ищем код подразделения...`);
+                // Проверяем разные варианты названия
+                const variants = [
+                    'Код подразделения',
+                    'Код подразделения, выдавшего Паспорт',
+                    'Код подразделения',
+                    'Код подразделения выдавшего паспорт'
+                ];
+
+                for (const variant of variants) {
+                    for (const [key, value] of Object.entries(data)) {
+                        if (normalizeKey(key) === normalizeKey(variant)) {
+                            debug(`  ✅ Найдено по варианту "${variant}": ${value}`);
+                            return value;
+                        }
+                    }
+                }
+            }
+
+            // Обычный поиск
+            for (const [key, value] of Object.entries(data)) {
+                if (normalizeKey(key) === normalizedTarget) {
+                    return value;
+                }
+            }
+
+            debug(`  ❌ Ключ "${targetKey}" не найден!`);
+            return undefined;
+        }
+
+        // ========== ГЛАВНАЯ ФУНКЦИЯ - ВСЁ В СТРОКИ, ДАННЫЕ БЕЗ ИЗМЕНЕНИЙ ==========
+        function prepareDataForTemplate(data) {
+            const result = {};
+
+            debug('🔄 Исходные данные из Excel:', data);
+
+            // Проходим по всем нашим ожидаемым полям
+            RAW_COLUMNS.forEach((rawKey, index) => {
+                const normalizedKey = NORMALIZED_COLUMNS[index];
+
+                // Ищем значение в данных без учета регистра
+                let value = findValueByKey(data, rawKey);
+
+                debug(`  Поиск "${rawKey}" → найдено:`, value);
+
+                // null/undefined → пустая строка
+                if (value === undefined || value === null) {
+                    result[rawKey] = '';
+                    debug(`    ⚠️ Пусто -> ""`);
+                    return;
+                }
+
+                // Даты
+                if (rawKey.toLowerCase().includes('дата') && typeof value === 'number') {
+                    value = formatExcelDate(value);
+                    debug(`    📅 Дата преобразована: "${value}"`);
+                }
+
+                // Числа с ведущими нулями (серия, номер паспорта, код подразделения)
+                else if (typeof value === 'number') {
+                    if (rawKey.includes('Серия') || rawKey.includes('Номер') || rawKey.includes('Код')) {
+                        // Сохраняем ведущие нули
+                        value = value.toString();
+                        // Если это код подразделения, формат "XXX-XXX"
+                        if (rawKey.includes('Код')) {
+                            // Оставляем как есть, без изменений
+                            debug(`    🔢 Код подразделения: "${value}"`);
+                        } else {
+                            if (value.length < 4) {
+                                value = value.padStart(4, '0');
+                            }
+                            debug(`    🔢 Число: "${value}"`);
+                        }
+                    } else {
+                        value = value.toString();
+                        debug(`    🔢 Число: "${value}"`);
+                    }
+                }
+
+                // ВСЁ остальное в строку + trim (НО БЕЗ toLowerCase!)
+                else {
+                    value = String(value).trim();
+                    debug(`    📝 Строка (только trim): "${value}"`);
+                }
+
+                result[rawKey] = value;
+            });
+
+            debug('✅ Результат подготовки:', result);
+            return result;
+        }
+
+        // ========== ЗАГРУЗКА ШАБЛОНА ==========
+        window.loadTemplate = async function (id, input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const content = await file.arrayBuffer();
+            const template = templates.find(t => t.id == id);
+            if (template) {
+                template.content = content;
+                template.fileName = file.name;
+
+                // Читаем теги из шаблона
+                try {
+                    const zip = new PizZip(content);
+                    const doc = new docxtemplater(zip);
+                    const tags = Object.keys(doc.getTags());
+
+                    debug(`📌 ТЕГИ В ШАБЛОНЕ ${file.name}:`, tags);
+
+                    // Проверяем наличие кода подразделения
+                    if (tags.some(tag => tag.toLowerCase().includes('код'))) {
+                        debug(`⚠️ Найден тег с кодом:`, tags.filter(t => t.toLowerCase().includes('код')));
+                    }
+
+                } catch (e) {
+                    debug(`❌ Ошибка чтения тегов: ${e.message}`);
+                }
+            }
+            updateGenerateButton();
+            updateStatus();
+        };
+
+        // ========== ЗАГРУЗКА EXCEL ==========
+        document.getElementById('excelFile').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const status = document.getElementById('status');
+            status.innerHTML = '⏳ Чтение Excel...';
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                    if (jsonData.length === 0) {
+                        throw new Error('Файл не содержит данных');
+                    }
+
+                    excelRows = jsonData;
+
+                    // Показываем реальные названия столбцов из Excel
+                    const excelColumns = Object.keys(jsonData[0]);
+                    debug('📊 НАЗВАНИЯ СТОЛБЦОВ В EXCEL:', excelColumns);
+
+                    // Проверяем наличие кода подразделения
+                    const codeColumn = excelColumns.find(col =>
+                        col.toLowerCase().includes('код') && col.toLowerCase().includes('подраздел')
+                    );
+                    if (codeColumn) {
+                        debug(`✅ Найден столбец с кодом подразделения: "${codeColumn}"`);
+                    } else {
+                        debug(`❌ Столбец с кодом подразделения НЕ НАЙДЕН!`);
+                    }
+
+                    updateGenerateButton();
+
+                } catch (error) {
+                    status.innerHTML = `❌ Ошибка: ${error.message}`;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // ========== ЗАПОЛНЕНИЕ ШАБЛОНА ==========
+        async function fillTemplate(templateContent, data) {
+            try {
+                const zip = new PizZip(templateContent);
+                const doc = new docxtemplater(zip, {
+                    paragraphLoop: true,
+                    linebreaks: true,
+                    delimiters: { start: '{', end: '}' }
+                });
+
+                // Подготавливаем данные
+                const preparedData = prepareDataForTemplate(data);
+
+                // ПРОВЕРЯЕМ КОД ПОДРАЗДЕЛЕНИЯ
+                const codeValue = preparedData['Код подразделения, выдавшего Паспорт'];
+                debug(`🚀 Код подразделения перед вставкой: "${codeValue}" (${typeof codeValue})`);
+
+                doc.setData(preparedData);
+                doc.render();
+
+                return doc.getZip().generate({
+                    type: 'blob',
+                    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                });
+
+            } catch (error) {
+                debug(`❌ ОШИБКА: ${error.message}`);
+                if (error.properties?.errors) {
+                    error.properties.errors.forEach(e => debug(`   ${e.message}`));
+                }
+                throw error;
+            }
+        }
+
+        // ========== ГЕНЕРАЦИЯ ==========
+        document.getElementById('generateBtn').addEventListener('click', async function () {
+            const status = document.getElementById('status');
+            status.innerHTML = '⏳ Создание документов...';
+            debugLogs = [];
+
+            const zip = new JSZip();
+            const loadedTemplates = templates.filter(t => t.content);
+            let success = 0, errors = 0;
+
+            debug('🚀 НАЧАЛО ГЕНЕРАЦИИ');
+            debug(`📊 Записей: ${excelRows.length}, Шаблонов: ${loadedTemplates.length}`);
+
+            for (let i = 0; i < excelRows.length; i++) {
+                const person = excelRows[i];
+                const folderName = String(person[COLUMN_MAPPING.FOLDER_NAME] || `Клиент_${i + 1}`)
+                    .replace(/[<>:"/\\|?*]/g, '_').trim();
+
+                debug(`\n👤 ЗАПИСЬ #${i + 1}: ${folderName}`);
+
+                for (const template of loadedTemplates) {
+                    try {
+                        const newDoc = await fillTemplate(template.content, person);
+
+                        const docName = (template.name || template.fileName?.replace('.docx', '') || 'Документ')
+                            .replace(/[<>:"/\\|?*]/g, '_');
+
+                        zip.file(`${folderName}/${docName}.docx`, newDoc);
+                        success++;
+                        debug(`✅ ${docName}.docx создан`);
+
+                    } catch (error) {
+                        errors++;
+                    }
+                }
+            }
+
+            debug(`\n📦 Создание ZIP...`);
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            saveAs(zipBlob, `Документы_${new Date().toISOString().slice(0, 10)}.zip`);
+
+            status.innerHTML = `✅ Готово! Создано: ${success} документов, ошибок: ${errors}`;
+            debug(`✅ ГОТОВО! Успешно: ${success}, Ошибок: ${errors}`);
+        });
+
+        // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+        function addTemplateField() {
+            const id = Date.now() + Math.random();
+            const div = document.createElement('div');
+            div.className = 'template-item';
+            div.id = `t-${id}`;
+            div.innerHTML = `
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" placeholder="Название" style="flex: 1;" onchange="updateName('${id}', this.value)">
+                        <button onclick="removeTemplate('${id}')" style="background: #dc3545;">Удалить</button>
+                    </div>
+                    <input type="file" accept=".docx" onchange="loadTemplate('${id}', this)">
+                `;
+            document.getElementById('templateList').appendChild(div);
+            templates.push({ id, name: '', content: null });
+        }
+
+        window.updateName = function (id, name) {
+            const t = templates.find(t => t.id == id);
+            if (t) t.name = name;
+        };
+
+        window.removeTemplate = function (id) {
+            document.getElementById(`t-${id}`).remove();
+            templates = templates.filter(t => t.id != id);
+            updateGenerateButton();
+            updateStatus();
+        };
+
+        function updateGenerateButton() {
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = !(excelRows.length && templates.some(t => t.content));
+        }
+
+        function updateStatus() {
+            const status = document.getElementById('status');
+            const loaded = templates.filter(t => t.content).length;
+            if (excelRows.length && loaded) {
+                status.innerHTML = `✅ Готово: ${excelRows.length} записей, ${loaded} шаблонов`;
+                status.className = 'status success';
+            }
+        }
+
+        window.onload = addTemplateField;
+    </script>
+</body>
+</html>
