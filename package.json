@@ -1,0 +1,9 @@
+{
+  "name": "methodist-sop-voskhod",
+  "version": "1.0.0",
+  "description": "Сайт для автоматизации заполнения документов",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
