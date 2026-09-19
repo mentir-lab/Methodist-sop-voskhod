@@ -1,177 +1,672 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Автозаполнение документов Word из Excel</title>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Автозаполнение документов Word из Excel</title>
     <style>
+        :root {
+            --primary: #1e5bff;
+            --primary-dark: #0d47d9;
+            --primary-light: #e7efff;
+            --primary-soft: #f4f8ff;
+            --text: #1a2233;
+            --text-muted: #5a6b85;
+            --border: #d4e0f5;
+            --success: #1b8a4a;
+            --success-bg: #e3f7eb;
+            --error: #c62828;
+            --error-bg: #fdeaea;
+            --info: #1565c0;
+            --info-bg: #e8f1fd;
+            --white: #ffffff;
+            --shadow: 0 4px 20px rgba(30, 91, 255, 0.08);
+            --shadow-lg: 0 8px 32px rgba(30, 91, 255, 0.14);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            max-width: 800px;
-            margin: 30px auto;
-            padding: 20px;
-            background: #f5f5f5;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+            background: linear-gradient(180deg, #f4f8ff 0%, #ffffff 100%);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+            padding: 20px 16px 60px;
+            font-size: 16px;
         }
 
         .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 900px;
+            margin: 0 auto;
         }
 
-        h1 {
-            color: #333;
-            margin-top: 0;
+        /* ===== ШАПКА СВЕРХУ ===== */
+        .top-brand {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 4px 14px;
+            margin-bottom: 4px;
+            flex-wrap: wrap;
         }
 
-        .file-input {
-            margin: 20px 0;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 5px;
+        .top-brand .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            font-size: 15px;
+            letter-spacing: 0.3px;
         }
 
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
-        }
-
-        input[type="file"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        button {
-            background: #007bff;
+        .top-brand .brand .logo-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            border: none;
-            padding: 12px 30px;
+            border-radius: 7px;
+            font-size: 13px;
+            box-shadow: 0 3px 8px rgba(30, 91, 255, 0.25);
+        }
+
+        .top-brand .brand-sub {
+            color: var(--text-muted);
+            font-size: 12.5px;
+        }
+
+        /* ===== ЗАГОЛОВОК ===== */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 24px 24px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -80px;
+            right: 40px;
+            width: 140px;
+            height: 140px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 50%;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            margin: 0 0 6px;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        /* ===== КАРТОЧКИ ===== */
+        .card {
+            background: var(--white);
+            border-radius: 14px;
+            padding: 22px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 17px;
+            font-weight: 700;
+            margin: 0 0 16px;
+            color: var(--text);
+        }
+
+        .card-title .icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: var(--primary-light);
+            border-radius: 8px;
             font-size: 16px;
-            border-radius: 5px;
+            flex-shrink: 0;
+        }
+
+        /* ===== ПОДСКАЗКИ (ВНИЗУ) ===== */
+        .hint {
+            display: flex;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--primary-soft);
+            border-left: 4px solid var(--primary);
+            border-radius: 10px;
+            margin-bottom: 14px;
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.55;
+        }
+
+        .hint:last-child {
+            margin-bottom: 0;
+        }
+
+        .hint .hint-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+            line-height: 1.4;
+        }
+
+        .hint strong {
+            color: var(--text);
+        }
+
+        /* ===== ПОЛЕ ФАЙЛА ===== */
+        .file-field {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: var(--primary-soft);
+            border: 2px dashed var(--border);
+            border-radius: 12px;
             cursor: pointer;
-            margin: 20px 0;
+            transition: all 0.2s;
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-muted);
+            position: relative;
         }
 
-            button:hover {
-                background: #0056b3;
-            }
-
-            button:disabled {
-                background: #ccc;
-                cursor: not-allowed;
-            }
-
-        .status {
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
+        .file-field:hover, .file-field:active {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary-dark);
         }
 
-        .success {
-            background: #d4edda;
-            color: #155724;
+        .file-field input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
         }
 
-        .info {
-            background: #e7f3ff;
-            color: #004085;
+        .file-field .file-icon {
+            font-size: 26px;
+            display: block;
+            margin-bottom: 6px;
         }
 
-        .error {
-            background: #f8d7da;
-            color: #721c24;
+        .file-field .file-label {
+            font-weight: 600;
+            color: var(--text);
+            display: block;
+            margin-bottom: 2px;
+            font-size: 15px;
+        }
+
+        .file-field .file-hint {
+            font-size: 12.5px;
+            color: var(--text-muted);
+        }
+
+        /* ===== КНОПКИ ===== */
+        button {
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            padding: 13px 20px;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            font-size: 16px;
+            padding: 15px 20px;
+            box-shadow: 0 4px 12px rgba(30, 91, 255, 0.25);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(30, 91, 255, 0.35);
+        }
+
+        .btn-primary:disabled {
+            background: #c5d0e0;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-add {
+            background: var(--primary-soft);
+            color: var(--primary-dark);
+            border: 1.5px dashed var(--primary);
+            width: 100%;
+            padding: 14px;
+            margin-top: 8px;
+        }
+
+        .btn-add:hover {
+            background: var(--primary-light);
+        }
+
+        .btn-debug {
+            background: #eef1f6;
+            color: var(--text-muted);
+            font-size: 13px;
+            padding: 10px 14px;
+        }
+
+        .btn-debug:hover {
+            background: #e0e5ee;
+            color: var(--text);
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .actions-row .btn-primary {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        /* ===== БЛОК ШАБЛОНОВ ===== */
+        .templates-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .templates-count {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            font-size: 13px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
         }
 
         .template-item {
-            background: #f8f9fa;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 5px;
-            border-left: 4px solid #007bff;
+            background: var(--primary-soft);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
         }
 
-        .add-template {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+        .multi-file-field {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: white;
+            border: 1.5px dashed var(--border);
+            border-radius: 9px;
             cursor: pointer;
-            margin: 10px 0;
+            transition: all 0.15s;
+            font-size: 14px;
+            color: var(--text-muted);
+            position: relative;
         }
 
+        .multi-file-field:hover {
+            border-color: var(--primary);
+            color: var(--primary-dark);
+            background: var(--primary-soft);
+        }
+
+        .multi-file-field input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .multi-file-field .plus {
+            font-size: 20px;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .loaded-files {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .loaded-file {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--success-bg);
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--success);
+            font-weight: 500;
+        }
+
+        .loaded-file .remove-file {
+            margin-left: auto;
+            background: transparent;
+            border: none;
+            color: var(--error);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            line-height: 1;
+        }
+
+        .loaded-file .remove-file:hover {
+            background: var(--error-bg);
+        }
+
+        /* ===== СТАТУС ===== */
+        .status {
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 14px;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status:not(:empty) {
+            display: block;
+        }
+
+        .status.success {
+            background: var(--success-bg);
+            color: var(--success);
+            border: 1px solid #b7e3c7;
+        }
+
+        .status.info {
+            background: var(--info-bg);
+            color: var(--info);
+            border: 1px solid #b8d4f5;
+        }
+
+        .status.error {
+            background: var(--error-bg);
+            color: var(--error);
+            border: 1px solid #f3b8b8;
+        }
+
+        /* ===== ПРОГРЕСС ===== */
+        .progress-bar {
+            width: 100%;
+            height: 26px;
+            background: var(--primary-soft);
+            border-radius: 13px;
+            overflow: hidden;
+            margin-bottom: 14px;
+            display: none;
+            border: 1px solid var(--border);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
+            width: 0%;
+            transition: width 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* ===== ОТЛАДКА ===== */
         .debug-panel {
-            background: #1e1e1e;
-            color: #00ff00;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
+            background: #0f1826;
+            color: #7dffb0;
+            padding: 16px;
+            border-radius: 12px;
             font-family: 'Courier New', monospace;
             font-size: 12px;
             max-height: 400px;
             overflow: auto;
             white-space: pre-wrap;
             display: none;
+            margin-bottom: 14px;
+            line-height: 1.5;
         }
 
-        .debug-btn {
-            background: #6c757d;
-            margin-right: 10px;
+        /* ===== ПОДВАЛ ===== */
+        .footer {
+            text-align: center;
+            padding: 24px 16px 0;
+            color: var(--text-muted);
+            font-size: 13px;
         }
 
-            .debug-btn:hover {
-                background: #5a6268;
-            }
-
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background: #e9ecef;
-            border-radius: 5px;
-            overflow: hidden;
-            margin: 10px 0;
+        .footer .sop-voskhod {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            font-size: 15px;
+            letter-spacing: 0.3px;
+            margin-bottom: 6px;
         }
 
-        .progress-fill {
-            height: 100%;
-            background: #007bff;
-            width: 0%;
-            transition: width 0.2s;
-            display: flex;
+        .footer .sop-voskhod .logo-mark {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            box-shadow: 0 3px 10px rgba(30, 91, 255, 0.3);
+        }
+
+        .footer .sub {
+            color: var(--text-muted);
             font-size: 12px;
-            font-weight: bold;
+        }
+
+        /* ===== АДАПТИВ ===== */
+        @media (max-width: 640px) {
+            body {
+                padding: 12px 10px 40px;
+                font-size: 15px;
+            }
+
+            .top-brand {
+                padding: 4px 2px 10px;
+            }
+
+            .top-brand .brand {
+                font-size: 14px;
+            }
+
+            .top-brand .brand-sub {
+                font-size: 12px;
+            }
+
+            .header {
+                padding: 20px 18px;
+                border-radius: 14px;
+            }
+
+            .header h1 {
+                font-size: 19px;
+            }
+
+            .header p {
+                font-size: 13px;
+            }
+
+            .card {
+                padding: 18px 16px;
+                border-radius: 12px;
+            }
+
+            .card-title {
+                font-size: 16px;
+            }
+
+            .actions-row {
+                flex-direction: column;
+            }
+
+            .actions-row .btn-primary,
+            .actions-row .btn-debug {
+                width: 100%;
+            }
+
+            button {
+                padding: 14px 18px;
+                font-size: 15px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .header h1 {
+                font-size: 17px;
+            }
+
+            .file-field {
+                padding: 14px 10px;
+            }
+
+            .top-brand {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📄 Автозаполнение документов Word</h1>
-        <p>Папки называются по фамилии (столбец "Фамилия")</p>
 
-        <div class="file-input">
-            <label>📊 Файл Excel с данными:</label>
+<div class="container">
+
+    <!-- БРЕНД СВЕРХУ -->
+    <div class="top-brand">
+        <div class="brand">
+            СОП «Восход»
+        </div>
+        <div class="brand-sub">Автозаполнение документов Word из Excel</div>
+    </div>
+
+    <!-- ЗАГОЛОВОК -->
+    <div class="header">
+        <div class="header-content">
+            <h1>📄 Автозаполнение документов Word</h1>
+            <p>Из Excel — в готовые документы за пару кликов</p>
+        </div>
+    </div>
+
+    <!-- EXCEL (НАВЕРХУ) -->
+    <div class="card">
+        <div class="card-title">
+            <span class="icon">📊</span>
+            Файл Excel с данными
+        </div>
+
+        <label class="file-field">
             <input type="file" id="excelFile" accept=".xlsx, .xls, .xlsm, .xlsb, .csv">
+            <span class="file-icon">📁</span>
+            <span class="file-label">Нажмите, чтобы выбрать файл</span>
+            <span class="file-hint">.xlsx, .xls, .xlsm, .xlsb, .csv</span>
+        </label>
+    </div>
+
+    <!-- ШАБЛОНЫ WORD (НАВЕРХУ) -->
+    <div class="card">
+        <div class="templates-header">
+            <div class="card-title" style="margin:0;">
+                <span class="icon">📑</span>
+                Шаблоны документов Word
+            </div>
+            <span class="templates-count" id="templatesCount">0 файлов</span>
         </div>
 
-        <div id="templatesSection">
-            <h3>📑 Шаблоны документов:</h3>
-            <div id="templateList"></div>
-            <button class="add-template" onclick="addTemplateField()">+ Добавить шаблон</button>
+        <div id="templateList"></div>
+
+        <button class="btn-add" onclick="addTemplateField()">
+            <span class="plus">+</span> Добавить шаблон
+        </button>
+    </div>
+
+    <!-- ДЕЙСТВИЯ -->
+    <div class="card">
+        <div class="actions-row">
+            <button id="generateBtn" class="btn-primary" disabled>
+                🚀 Создать документы
+            </button>
+            <button class="btn-debug" onclick="toggleDebug()">
+                📋 Отладка
+            </button>
         </div>
 
-        <div style="display: flex; gap: 10px;">
-            <button id="generateBtn" disabled>Создать документы</button>
-            <button class="debug-btn" onclick="toggleDebug()">📋 Показать отладку</button>
-        </div>
-
-        <div id="progressWrap" class="progress-bar" style="display:none;">
+        <div id="progressWrap" class="progress-bar">
             <div id="progressFill" class="progress-fill">0%</div>
         </div>
 
@@ -179,463 +674,534 @@
         <div id="debugPanel" class="debug-panel"></div>
     </div>
 
-    <!-- Библиотеки -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.37.0/build/docxtemplater.js"></script>
+    <!-- ПОДСКАЗКА (ВНИЗУ) -->
+    <div class="card">
+        <div class="card-title">
+            <span class="icon">💡</span>
+            Как пользоваться
+        </div>
 
-    <script>
-        // ========== НАСТРОЙКА СТОЛБЦОВ ==========
-        const RAW_COLUMNS = [
-            'Фамилия',
-            'Имя',
-            'Отчество',
-            'Дата рождения',
-            'Место учебы (пишется официально ФГБОУ ВО "Иркутский государственный университет")',
-            'Место регистрации по паспорту',
-            'Контактный телефон',
-            'Вк',
-            'Электронная почта',
-            'Серия паспорта',
-            'Номер паспорта',
-            'Код подразделения, выдавшего Паспорт',
-            'Кем выдан паспорт',
-            'Дата выдачи Паспорта',
-            'Фактический адрес',
-            'Город рождения'
-        ];
+        <div class="hint">
+            <span class="hint-icon">1️⃣</span>
+            <div>
+                <strong>Загрузите Excel-файл</strong> с данными. Поддерживаются форматы
+                <strong>.xlsx, .xls, .xlsm, .xlsb, .csv</strong>. Папки в архиве будут
+                называться по столбцу <strong>«Фамилия»</strong>.
+            </div>
+        </div>
 
-        const NORMALIZED_COLUMNS = RAW_COLUMNS.map(col => col.toLowerCase().trim());
+        <div class="hint">
+            <span class="hint-icon">2️⃣</span>
+            <div>
+                <strong>Добавьте один или несколько шаблонов Word (.docx)</strong>.
+                Можно загрузить сразу несколько файлов — каждый станет отдельным
+                документом для каждой записи.
+            </div>
+        </div>
 
-        const COLUMN_MAPPING = {
-            FOLDER_NAME: 'Фамилия',
-            RAW_COLUMNS: RAW_COLUMNS,
-            NORMALIZED: NORMALIZED_COLUMNS
-        };
+        <div class="hint">
+            <span class="hint-icon">3️⃣</span>
+            <div>
+                <strong>В шаблонах используйте теги</strong> вида
+                <strong>{Фамилия}</strong>, <strong>{Имя}</strong>,
+                <strong>{Код подразделения, выдавшего Паспорт}</strong> и т.д.
+                Названия тегов должны совпадать с названиями столбцов Excel.
+            </div>
+        </div>
 
-        let excelRows = [];
-        let templates = [];
-        let debugLogs = [];
+        <div class="hint">
+            <span class="hint-icon">4️⃣</span>
+            <div>
+                <strong>Нажмите «Создать документы»</strong> — программа сформирует
+                ZIP-архив с папками по фамилиям и готовыми документами внутри.
+            </div>
+        </div>
+    </div>
 
-        // ========== ОТЛАДКА ==========
-        function debug(message, data = null) {
-            const timestamp = new Date().toLocaleTimeString();
-            let logMessage = `[${timestamp}] ${message}`;
-            if (data) {
-                if (typeof data === 'object') {
-                    logMessage += `\n${JSON.stringify(data, null, 2)}`;
+    <!-- ПОДВАЛ -->
+    <div class="footer">
+        <div class="sop-voskhod">
+            СОП «Восход»
+        </div>
+        <div class="sub">Автозаполнение документов Word из Excel</div>
+    </div>
+
+</div>
+
+<!-- Библиотеки -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.37.0/build/docxtemplater.js"></script>
+
+<script>
+    // ========== НАСТРОЙКА СТОЛБЦОВ ==========
+    const RAW_COLUMNS = [
+        'Фамилия',
+        'Имя',
+        'Отчество',
+        'Дата рождения',
+        'Место учебы (пишется официально ФГБОУ ВО "Иркутский государственный университет")',
+        'Место регистрации по паспорту',
+        'Контактный телефон',
+        'Вк',
+        'Электронная почта',
+        'Серия паспорта',
+        'Номер паспорта',
+        'Код подразделения, выдавшего Паспорт',
+        'Кем выдан паспорт',
+        'Дата выдачи Паспорта',
+        'Фактический адрес',
+        'Город рождения'
+    ];
+
+    const NORMALIZED_COLUMNS = RAW_COLUMNS.map(col => col.toLowerCase().trim());
+    const COLUMN_MAPPING = {
+        FOLDER_NAME: 'Фамилия',
+        RAW_COLUMNS: RAW_COLUMNS,
+        NORMALIZED: NORMALIZED_COLUMNS
+    };
+
+    let excelRows = [];
+    let templates = [];
+    let debugLogs = [];
+
+    // ========== ОТЛАДКА ==========
+    function debug(message, data = null) {
+        const timestamp = new Date().toLocaleTimeString();
+        let logMessage = `[${timestamp}] ${message}`;
+        if (data) {
+            if (typeof data === 'object') {
+                logMessage += `\n${JSON.stringify(data, null, 2)}`;
+            } else {
+                logMessage += ` ${data}`;
+            }
+        }
+        debugLogs.push(logMessage);
+        const panel = document.getElementById('debugPanel');
+        if (panel) panel.innerHTML = debugLogs.join('\n\n');
+        console.log(`🔍 ${message}`, data || '');
+    }
+
+    window.toggleDebug = function () {
+        const panel = document.getElementById('debugPanel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    };
+
+    // ========== УТИЛИТЫ ==========
+    function normalizeKey(str) {
+        if (!str) return '';
+        return String(str).toLowerCase().trim();
+    }
+
+    function formatExcelDate(excelDate) {
+        if (!excelDate && excelDate !== 0) return '';
+        try {
+            const date = new Date((excelDate - 25569) * 86400 * 1000);
+            if (!isNaN(date)) {
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}.${month}.${year}`;
+            }
+        } catch (e) { }
+        return String(excelDate);
+    }
+
+    function findValueByKey(data, targetKey) {
+        const normalizedTarget = normalizeKey(targetKey);
+        if (targetKey.includes('Код подразделения')) {
+            const variants = [
+                'Код подразделения',
+                'Код подразделения, выдавшего Паспорт',
+                'Код подразделения выдавшего паспорт'
+            ];
+            for (const variant of variants) {
+                for (const [key, value] of Object.entries(data)) {
+                    if (normalizeKey(key) === normalizeKey(variant)) return value;
+                }
+            }
+        }
+        for (const [key, value] of Object.entries(data)) {
+            if (normalizeKey(key) === normalizedTarget) return value;
+        }
+        return undefined;
+    }
+
+    function prepareDataForTemplate(data) {
+        const result = {};
+        RAW_COLUMNS.forEach((rawKey) => {
+            let value = findValueByKey(data, rawKey);
+            if (value === undefined || value === null) {
+                result[rawKey] = '';
+                return;
+            }
+            if (rawKey.toLowerCase().includes('дата') && typeof value === 'number') {
+                value = formatExcelDate(value);
+            } else if (typeof value === 'number') {
+                if (rawKey.includes('Серия') || rawKey.includes('Номер') || rawKey.includes('Код')) {
+                    value = value.toString();
+                    if (!rawKey.includes('Код') && value.length < 4) {
+                        value = value.padStart(4, '0');
+                    }
                 } else {
-                    logMessage += ` ${data}`;
+                    value = value.toString();
                 }
+            } else {
+                value = String(value).trim();
             }
-            debugLogs.push(logMessage);
-            document.getElementById('debugPanel').innerHTML = debugLogs.join('\n\n');
-            console.log(`🔍 ${message}`, data || '');
-        }
+            result[rawKey] = value;
+        });
+        return result;
+    }
 
-        window.toggleDebug = function () {
-            const panel = document.getElementById('debugPanel');
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-        };
+    // ========== ШАБЛОНЫ ==========
+    window.addTemplateField = function () {
+        const id = Date.now() + Math.random();
+        const div = document.createElement('div');
+        div.className = 'template-item';
+        div.id = `t-${id}`;
+        div.innerHTML = `
+            <label class="multi-file-field">
+                <input type="file" accept=".docx" multiple
+                       onchange="loadTemplateFiles('${id}', this)">
+                <span class="plus">+</span>
+                <span>Выбрать один или несколько .docx</span>
+            </label>
+            <div class="loaded-files" id="files-${id}"></div>
+        `;
+        document.getElementById('templateList').appendChild(div);
+        templates.push({ id, files: [] });
+        updateTemplatesCount();
+    };
 
-        // ========== НОРМАЛИЗАЦИЯ ==========
-        function normalizeKey(str) {
-            if (!str) return '';
-            return String(str).toLowerCase().trim();
-        }
+    window.removeTemplate = function (id) {
+        const el = document.getElementById(`t-${id}`);
+        if (el) el.remove();
+        templates = templates.filter(t => t.id != id);
+        updateGenerateButton();
+        updateStatus();
+        updateTemplatesCount();
+    };
 
-        // ========== ДАТА ==========
-        function formatExcelDate(excelDate) {
-            if (!excelDate && excelDate !== 0) return '';
+    window.loadTemplateFiles = async function (id, input) {
+        const files = Array.from(input.files || []);
+        if (!files.length) return;
+
+        const t = templates.find(t => t.id == id);
+        if (!t) return;
+
+        for (const file of files) {
             try {
-                const date = new Date((excelDate - 25569) * 86400 * 1000);
-                if (!isNaN(date)) {
-                    const day = date.getDate().toString().padStart(2, '0');
-                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                    const year = date.getFullYear();
-                    return `${day}.${month}.${year}`;
-                }
-            } catch (e) { }
-            return String(excelDate);
-        }
-
-        // ========== ПОИСК ЗНАЧЕНИЯ ==========
-        function findValueByKey(data, targetKey) {
-            const normalizedTarget = normalizeKey(targetKey);
-
-            if (targetKey.includes('Код подразделения')) {
-                const variants = [
-                    'Код подразделения',
-                    'Код подразделения, выдавшего Паспорт',
-                    'Код подразделения выдавшего паспорт'
-                ];
-
-                for (const variant of variants) {
-                    for (const [key, value] of Object.entries(data)) {
-                        if (normalizeKey(key) === normalizeKey(variant)) {
-                            return value;
-                        }
-                    }
-                }
-            }
-
-            for (const [key, value] of Object.entries(data)) {
-                if (normalizeKey(key) === normalizedTarget) {
-                    return value;
-                }
-            }
-
-            return undefined;
-        }
-
-        // ========== ПОДГОТОВКА ДАННЫХ ==========
-        function prepareDataForTemplate(data) {
-            const result = {};
-
-            RAW_COLUMNS.forEach((rawKey, index) => {
-                let value = findValueByKey(data, rawKey);
-
-                if (value === undefined || value === null) {
-                    result[rawKey] = '';
-                    return;
-                }
-
-                if (rawKey.toLowerCase().includes('дата') && typeof value === 'number') {
-                    value = formatExcelDate(value);
-                }
-                else if (typeof value === 'number') {
-                    if (rawKey.includes('Серия') || rawKey.includes('Номер') || rawKey.includes('Код')) {
-                        value = value.toString();
-                        if (!rawKey.includes('Код') && value.length < 4) {
-                            value = value.padStart(4, '0');
-                        }
-                    } else {
-                        value = value.toString();
-                    }
-                }
-                else {
-                    value = String(value).trim();
-                }
-
-                result[rawKey] = value;
-            });
-
-            return result;
-        }
-
-        // ========== ЗАГРУЗКА ШАБЛОНА (С КОМПИЛЯЦИЕЙ) ==========
-        window.loadTemplate = async function (id, input) {
-            const file = input.files[0];
-            if (!file) return;
-
-            const content = await file.arrayBuffer();
-            const template = templates.find(t => t.id == id);
-            if (template) {
-                template.content = content;
-                template.fileName = file.name;
+                const content = await file.arrayBuffer();
 
                 try {
-                    // КОМПИЛИРУЕМ ШАБЛОН ОДИН РАЗ
                     const zip = new PizZip(content);
                     const doc = new docxtemplater(zip, {
                         paragraphLoop: true,
                         linebreaks: true,
                         delimiters: { start: '{', end: '}' }
                     });
-
-                    // Сохраняем скомпилированный шаблон
-                    template.compiled = doc;
-
                     const tags = Object.keys(doc.getTags());
                     debug(`📌 ТЕГИ В ШАБЛОНЕ ${file.name}:`, tags);
-
                 } catch (e) {
-                    debug(`❌ Ошибка компиляции шаблона: ${e.message}`);
+                    debug(`⚠️ Шаблон ${file.name} не скомпилировался: ${e.message}`);
                 }
+
+                t.files.push({ name: file.name, content });
+            } catch (e) {
+                debug(`❌ Ошибка чтения ${file.name}: ${e.message}`);
             }
-            updateGenerateButton();
-            updateStatus();
-        };
+        }
 
-        // ========== ЗАГРУЗКА EXCEL С КОНВЕРТАЦИЕЙ ==========
-        document.getElementById('excelFile').addEventListener('change', function (e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        input.value = '';
 
-            const status = document.getElementById('status');
-            status.innerHTML = '⏳ Чтение и конвертация Excel...';
-            status.className = 'status info';
-            debugLogs = [];
-            debug(`📂 Загружен файл: ${file.name} (${(file.size / 1024).toFixed(1)} КБ)`);
+        renderLoadedFiles(id);
+        updateGenerateButton();
+        updateStatus();
+        updateTemplatesCount();
+    };
 
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
+    window.removeTemplateFile = function (templateId, fileIndex) {
+        const t = templates.find(t => t.id == templateId);
+        if (!t) return;
+        t.files.splice(fileIndex, 1);
+        renderLoadedFiles(templateId);
+        updateGenerateButton();
+        updateStatus();
+        updateTemplatesCount();
+    };
 
-                    const workbook = XLSX.read(data, {
-                        type: 'array',
-                        cellDates: false,
-                        cellStyles: false,
-                        cellNF: false,
-                        cellFormula: false,
-                        sheetStubs: false,
-                        raw: true,
-                        bookVBA: false
-                    });
+    function renderLoadedFiles(id) {
+        const t = templates.find(t => t.id == id);
+        const container = document.getElementById(`files-${id}`);
+        if (!t || !container) return;
 
-                    debug(`📑 Листов: ${workbook.SheetNames.length}`, workbook.SheetNames);
+        container.innerHTML = t.files.map((f, idx) => `
+            <div class="loaded-file">
+                <span>📄</span>
+                <span>${escapeHtml(f.name)}</span>
+                <button class="remove-file"
+                        onclick="removeTemplateFile('${id}', ${idx})"
+                        title="Удалить">✕</button>
+            </div>
+        `).join('');
+    }
 
-                    // Конвертация в чистый XLSX
-                    const xlsxArrayBuffer = XLSX.write(workbook, {
-                        type: 'array',
-                        bookType: 'xlsx',
-                        bookVBA: false,
-                        compression: true
-                    });
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
 
-                    const cleanWorkbook = XLSX.read(xlsxArrayBuffer, {
-                        type: 'array',
-                        cellDates: false,
-                        raw: true
-                    });
+    function updateTemplatesCount() {
+        const total = templates.reduce((sum, t) => sum + t.files.length, 0);
+        const el = document.getElementById('templatesCount');
+        if (el) el.textContent = `${total} ${plural(total, 'файл', 'файла', 'файлов')}`;
+    }
 
-                    let jsonData = [];
-                    let usedSheetName = '';
+    function plural(n, one, few, many) {
+        const mod10 = n % 10, mod100 = n % 100;
+        if (mod10 === 1 && mod100 !== 11) return one;
+        if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+        return many;
+    }
 
+    // ========== ЗАГРУЗКА EXCEL ==========
+    document.getElementById('excelFile').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const status = document.getElementById('status');
+        status.innerHTML = '⏳ Чтение и конвертация Excel...';
+        status.className = 'status info';
+        debugLogs = [];
+        debug(`📂 Загружен файл: ${file.name} (${(file.size / 1024).toFixed(1)} КБ)`);
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+
+                const workbook = XLSX.read(data, {
+                    type: 'array',
+                    cellDates: false,
+                    cellStyles: false,
+                    cellNF: false,
+                    cellFormula: false,
+                    sheetStubs: false,
+                    raw: true,
+                    bookVBA: false
+                });
+
+                debug(`📑 Листов: ${workbook.SheetNames.length}`, workbook.SheetNames);
+
+                const xlsxArrayBuffer = XLSX.write(workbook, {
+                    type: 'array',
+                    bookType: 'xlsx',
+                    bookVBA: false,
+                    compression: true
+                });
+
+                const cleanWorkbook = XLSX.read(xlsxArrayBuffer, {
+                    type: 'array',
+                    cellDates: false,
+                    raw: true
+                });
+
+                let jsonData = [];
+                let usedSheetName = '';
+
+                for (const sheetName of cleanWorkbook.SheetNames) {
+                    const sheet = cleanWorkbook.Sheets[sheetName];
+                    if (!sheet) continue;
+                    const tempJson = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+                    if (tempJson.length > 0) {
+                        const keys = Object.keys(tempJson[0]);
+                        const hasOurColumns = keys.some(k =>
+                            k.toLowerCase().includes('фамилия') ||
+                            k.toLowerCase().includes('имя') ||
+                            k.toLowerCase().includes('код подраздел')
+                        );
+                        if (hasOurColumns) {
+                            jsonData = tempJson;
+                            usedSheetName = sheetName;
+                            debug(`  ✅ Лист "${sheetName}" выбран (${tempJson.length} записей)`);
+                            break;
+                        }
+                    }
+                }
+
+                if (jsonData.length === 0) {
                     for (const sheetName of cleanWorkbook.SheetNames) {
                         const sheet = cleanWorkbook.Sheets[sheetName];
-                        if (!sheet) continue;
-
                         const tempJson = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-
                         if (tempJson.length > 0) {
-                            const keys = Object.keys(tempJson[0]);
-                            const hasOurColumns = keys.some(k =>
-                                k.toLowerCase().includes('фамилия') ||
-                                k.toLowerCase().includes('имя') ||
-                                k.toLowerCase().includes('код подраздел')
-                            );
-
-                            if (hasOurColumns) {
-                                jsonData = tempJson;
-                                usedSheetName = sheetName;
-                                debug(`  ✅ Лист "${sheetName}" выбран (${tempJson.length} записей)`);
-                                break;
-                            }
+                            jsonData = tempJson;
+                            usedSheetName = sheetName;
+                            break;
                         }
                     }
+                }
 
-                    if (jsonData.length === 0) {
-                        for (const sheetName of cleanWorkbook.SheetNames) {
-                            const sheet = cleanWorkbook.Sheets[sheetName];
-                            const tempJson = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-                            if (tempJson.length > 0) {
-                                jsonData = tempJson;
-                                usedSheetName = sheetName;
-                                break;
-                            }
-                        }
-                    }
+                if (jsonData.length === 0) throw new Error('Файл не содержит данных');
 
-                    if (jsonData.length === 0) {
-                        throw new Error('Файл не содержит данных');
-                    }
+                excelRows = jsonData;
+                debug(`✅ Загружено: ${jsonData.length} записей с листа "${usedSheetName}"`);
 
-                    excelRows = jsonData;
-                    debug(`✅ Загружено: ${jsonData.length} записей с листа "${usedSheetName}"`);
+                status.innerHTML = `✅ Загружено: ${jsonData.length} записей (лист "${usedSheetName}")`;
+                status.className = 'status success';
+                updateGenerateButton();
 
-                    const excelColumns = Object.keys(jsonData[0]);
-                    debug('📊 Столбцы в Excel:', excelColumns);
+            } catch (error) {
+                status.innerHTML = `❌ Ошибка: ${error.message}`;
+                status.className = 'status error';
+                debug(`❌ ОШИБКА: ${error.message}`);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    });
 
-                    status.innerHTML = `✅ Загружено: ${jsonData.length} записей (лист "${usedSheetName}")`;
-                    status.className = 'status success';
+    // ========== ГЕНЕРАЦИЯ ==========
+    document.getElementById('generateBtn').addEventListener('click', async function () {
+        const status = document.getElementById('status');
+        const btn = this;
+        btn.disabled = true;
 
-                    updateGenerateButton();
+        const progressWrap = document.getElementById('progressWrap');
+        const progressFill = document.getElementById('progressFill');
+        progressWrap.style.display = 'block';
+        progressFill.style.width = '0%';
+        progressFill.textContent = '0%';
+
+        status.innerHTML = '⏳ Создание документов...';
+        status.className = 'status info';
+        debugLogs = [];
+        document.getElementById('debugPanel').innerHTML = '';
+
+        const zip = new JSZip();
+
+        const flatTemplates = [];
+        templates.forEach(t => {
+            t.files.forEach(f => {
+                flatTemplates.push({ name: f.name, content: f.content });
+            });
+        });
+
+        let success = 0, errors = 0;
+        const total = excelRows.length * flatTemplates.length;
+        let processed = 0;
+
+        debug('🚀 НАЧАЛО ГЕНЕРАЦИИ');
+        debug(`📊 Записей: ${excelRows.length}, Шаблонов: ${flatTemplates.length}, Всего документов: ${total}`);
+
+        const startTime = performance.now();
+
+        for (let i = 0; i < excelRows.length; i++) {
+            const person = excelRows[i];
+            const folderName = String(person[COLUMN_MAPPING.FOLDER_NAME] || `Клиент_${i + 1}`)
+                .replace(/[<>:"/\\|?*]/g, '_').trim();
+
+            const preparedData = prepareDataForTemplate(person);
+
+            for (const template of flatTemplates) {
+                try {
+                    const zipT = new PizZip(template.content);
+                    const doc = new docxtemplater(zipT, {
+                        paragraphLoop: true,
+                        linebreaks: true,
+                        delimiters: { start: '{', end: '}' }
+                    });
+                    doc.setData(preparedData);
+                    doc.render();
+
+                    const blob = doc.getZip().generate({
+                        type: 'blob',
+                        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                    });
+
+                    const docName = template.name.replace('.docx', '').replace(/[<>:"/\\|?*]/g, '_');
+                    zip.file(`${folderName}/${docName}.docx`, blob);
+                    success++;
 
                 } catch (error) {
-                    status.innerHTML = `❌ Ошибка: ${error.message}`;
-                    status.className = 'status error';
-                    debug(`❌ ОШИБКА: ${error.message}`);
+                    errors++;
+                    debug(`❌ Ошибка: ${error.message}`);
                 }
-            };
-            reader.readAsArrayBuffer(file);
-        });
 
-        // ========== ГЕНЕРАЦИЯ С КЭШИРОВАННЫМ ШАБЛОНОМ ==========
-        document.getElementById('generateBtn').addEventListener('click', async function () {
-            const status = document.getElementById('status');
-            const btn = this;
-            btn.disabled = true;
+                processed++;
 
-            const progressWrap = document.getElementById('progressWrap');
-            const progressFill = document.getElementById('progressFill');
-            progressWrap.style.display = 'block';
-            progressFill.style.width = '0%';
-            progressFill.textContent = '0%';
-
-            status.innerHTML = '⏳ Создание документов...';
-            status.className = 'status info';
-            debugLogs = [];
-            document.getElementById('debugPanel').innerHTML = '';
-
-            const zip = new JSZip();
-            const loadedTemplates = templates.filter(t => t.compiled);
-            let success = 0, errors = 0;
-
-            const total = excelRows.length * loadedTemplates.length;
-            let processed = 0;
-
-            debug('🚀 НАЧАЛО ГЕНЕРАЦИИ');
-            debug(`📊 Записей: ${excelRows.length}, Шаблонов: ${loadedTemplates.length}, Всего документов: ${total}`);
-
-            const startTime = performance.now();
-
-            for (let i = 0; i < excelRows.length; i++) {
-                const person = excelRows[i];
-                const folderName = String(person[COLUMN_MAPPING.FOLDER_NAME] || `Клиент_${i + 1}`)
-                    .replace(/[<>:"/\\|?*]/g, '_').trim();
-
-                const preparedData = prepareDataForTemplate(person);
-
-                for (const template of loadedTemplates) {
-                    try {
-                        // ИСПОЛЬЗУЕМ СКОМПИЛИРОВАННЫЙ ШАБЛОН
-                        // Создаём копию через новый PizZip из скомпилированного контента
-                        const doc = template.compiled;
-                        doc.setData(preparedData);
-                        doc.render();
-
-                        const blob = doc.getZip().generate({
-                            type: 'blob',
-                            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                        });
-
-                        // ВАЖНО: после render() docxtemplater мутирует внутренний zip,
-                        // поэтому пересоздаём compiled из исходного content для следующей итерации
-                        template.compiled = new docxtemplater(new PizZip(template.content), {
-                            paragraphLoop: true,
-                            linebreaks: true,
-                            delimiters: { start: '{', end: '}' }
-                        });
-
-                        const docName = (template.name || template.fileName?.replace('.docx', '') || 'Документ')
-                            .replace(/[<>:"/\\|?*]/g, '_');
-
-                        zip.file(`${folderName}/${docName}.docx`, blob);
-                        success++;
-
-                    } catch (error) {
-                        errors++;
-                        debug(`❌ Ошибка: ${error.message}`);
-                    }
-
-                    processed++;
-
-                    // Обновляем прогресс каждые 5 документов
-                    if (processed % 5 === 0 || processed === total) {
-                        const percent = (processed / total * 100).toFixed(1);
-                        progressFill.style.width = percent + '%';
-                        progressFill.textContent = percent + '%';
-                        status.innerHTML = `⏳ Создано ${processed} из ${total} документов...`;
-
-                        // Отдаём управление браузеру
-                        await new Promise(r => setTimeout(r, 0));
-                    }
+                if (processed % 5 === 0 || processed === total) {
+                    const percent = (processed / total * 100).toFixed(1);
+                    progressFill.style.width = percent + '%';
+                    progressFill.textContent = percent + '%';
+                    status.innerHTML = `⏳ Создано ${processed} из ${total} документов...`;
+                    await new Promise(r => setTimeout(r, 0));
                 }
             }
+        }
 
-            const genTime = ((performance.now() - startTime) / 1000).toFixed(1);
-            debug(`✅ Генерация завершена за ${genTime} сек`);
+        const genTime = ((performance.now() - startTime) / 1000).toFixed(1);
+        debug(`✅ Генерация завершена за ${genTime} сек`);
 
-            // ========== СОЗДАНИЕ ZIP ==========
-            status.innerHTML = '⏳ Упаковка архива...';
-            progressFill.style.width = '0%';
-            progressFill.textContent = '0%';
+        status.innerHTML = '⏳ Упаковка архива...';
+        progressFill.style.width = '0%';
+        progressFill.textContent = '0%';
 
-            const zipBlob = await zip.generateAsync(
-                {
-                    type: 'blob',
-                    compression: 'STORE' // БЕЗ СЖАТИЯ — максимально быстро
-                },
-                (metadata) => {
-                    progressFill.style.width = metadata.percent.toFixed(1) + '%';
-                    progressFill.textContent = metadata.percent.toFixed(1) + '%';
-                }
-            );
+        const zipBlob = await zip.generateAsync(
+            { type: 'blob', compression: 'STORE' },
+            (metadata) => {
+                progressFill.style.width = metadata.percent.toFixed(1) + '%';
+                progressFill.textContent = metadata.percent.toFixed(1) + '%';
+            }
+        );
 
-            debug(`✅ ZIP создан: ${(zipBlob.size / 1024 / 1024).toFixed(2)} МБ`);
+        debug(`✅ ZIP создан: ${(zipBlob.size / 1024 / 1024).toFixed(2)} МБ`);
 
-            // ========== СКАЧИВАНИЕ ==========
-            status.innerHTML = '⏳ Сохранение файла...';
+        status.innerHTML = '⏳ Сохранение файла...';
 
-            const fileName = `Документы_${new Date().toISOString().slice(0, 10)}.zip`;
+        const fileName = `Документы_${new Date().toISOString().slice(0, 10)}.zip`;
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
 
-            const url = URL.createObjectURL(zipBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fileName;
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 2000);
 
-            setTimeout(() => {
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }, 2000);
+        status.innerHTML = `✅ Готово! Создано: ${success} документов, ошибок: ${errors}. Время: ${genTime} сек.`;
+        status.className = 'status success';
+        progressWrap.style.display = 'none';
 
-            status.innerHTML = `✅ Готово! Создано: ${success} документов, ошибок: ${errors}. Время: ${genTime} сек.`;
+        btn.disabled = false;
+    });
+
+    // ========== ОБНОВЛЕНИЕ КНОПКИ / СТАТУСА ==========
+    function updateGenerateButton() {
+        const btn = document.getElementById('generateBtn');
+        const totalTemplates = templates.reduce((s, t) => s + t.files.length, 0);
+        btn.disabled = !(excelRows.length && totalTemplates);
+    }
+
+    function updateStatus() {
+        const status = document.getElementById('status');
+        const totalTemplates = templates.reduce((s, t) => s + t.files.length, 0);
+        if (excelRows.length && totalTemplates) {
+            status.innerHTML = `✅ Готово: ${excelRows.length} записей, ${totalTemplates} ${plural(totalTemplates, 'шаблон', 'шаблона', 'шаблонов')}`;
             status.className = 'status success';
-            progressWrap.style.display = 'none';
-
-            btn.disabled = false;
-        });
-
-        // ========== ВСПОМОГАТЕЛЬНЫЕ ==========
-        function addTemplateField() {
-            const id = Date.now() + Math.random();
-            const div = document.createElement('div');
-            div.className = 'template-item';
-            div.id = `t-${id}`;
-            div.innerHTML = `
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <input type="text" placeholder="Название" style="flex: 1;" onchange="updateName('${id}', this.value)">
-                        <button onclick="removeTemplate('${id}')" style="background: #dc3545;">Удалить</button>
-                    </div>
-                    <input type="file" accept=".docx" onchange="loadTemplate('${id}', this)">
-                `;
-            document.getElementById('templateList').appendChild(div);
-            templates.push({ id, name: '', content: null, compiled: null });
         }
+    }
 
-        window.updateName = function (id, name) {
-            const t = templates.find(t => t.id == id);
-            if (t) t.name = name;
-        };
+    window.onload = function () {
+        addTemplateField();
+    };
+</script>
 
-        window.removeTemplate = function (id) {
-            document.getElementById(`t-${id}`).remove();
-            templates = templates.filter(t => t.id != id);
-            updateGenerateButton();
-            updateStatus();
-        };
-
-        function updateGenerateButton() {
-            const btn = document.getElementById('generateBtn');
-            btn.disabled = !(excelRows.length && templates.some(t => t.compiled));
-        }
-
-        function updateStatus() {
-            const status = document.getElementById('status');
-            const loaded = templates.filter(t => t.compiled).length;
-            if (excelRows.length && loaded) {
-                status.innerHTML = `✅ Готово: ${excelRows.length} записей, ${loaded} шаблонов`;
-                status.className = 'status success';
-            }
-        }
-
-        window.onload = addTemplateField;
-    </script>
 </body>
 </html>
